@@ -62,7 +62,7 @@ var createUser = function(uuid, callback) {
 };
 
 var createHandshake = function(user_id,lat,lng,timestamp,callback){
-	var query_string = 'INSERT INTO shakes (user_id, lat, lng, timestamp, created) VALUES ('+user_id+','+lat+','+lng+',FROM_UNIXTIME('+timestamp+'), NOW())';
+	var query_string = 'INSERT INTO shakes (user_id, lat, lng, timestamp, created) VALUES ('+user_id+','+lat+','+lng+',FROM_UNIXTIME('+timestamp+'), NOW()) ON DUPLICATE KEY UPDATE id= LAST_INSERT_ID(id)';
 	query(query_string,callback);
 };
 
