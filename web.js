@@ -67,7 +67,7 @@ var createHandshake = function(user_id,lat,lng,timestamp,callback){
 };
 
 var createAccessToken = function(user_id,access_token,callback){
-	var query_string = 'INSERT INTO access_tokens (user_id, access_token, created) VALUES ('+user_id+','+access_token+', NOW())';
+	var query_string = 'INSERT INTO access_tokens (user_id, access_token, created) VALUES ('+user_id+','+access_token+', NOW()) ON DUPLICATE KEY UPDATE id= LAST_INSERT_ID(id)';
 	query(query_string,callback);
 };
 app.post('/shakes/add', function(request, response) {
@@ -85,6 +85,8 @@ app.post('/shakes/add', function(request, response) {
 		createAccessToken(user_id,access_token,function(rows){
 			createHandshake(user_id,lat,lng,timestamp,function(rows){
 				console.log('rows',rows);
+				res.json({ msgId: msg.fileName })
+
 				response.send('Good job.');
 			});
 		});
