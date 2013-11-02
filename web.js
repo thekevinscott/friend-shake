@@ -48,7 +48,9 @@ var createUser = function(uuid, callback) {
 };
 
 var createHandshake = function(user_id,lat,lng,timestamp,callback){
-	connection.query('INSERT INTO shakes (user_id, lat, lng, timestamp, created) VALUES ('+user_id+','+lat+','+lng+','+timestamp+', NOW())', function(err, rows, fields) {
+	var query = 'INSERT INTO shakes (user_id, lat, lng, timestamp, created) VALUES ('+user_id+','+lat+','+lng+',FROM_UNIXTIME('+timestamp+'), NOW())';
+	console.log('handshake query',query);
+	connection.query(query, function(err, rows, fields) {
 		if (err) {
 			console.log('err',err);
 		} else {
