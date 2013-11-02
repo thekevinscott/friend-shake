@@ -23,25 +23,13 @@ var connection = mysql.createConnection(db_config);
 
 app.get('/', function(request, response) {
 
-	response.send('What are you doing here');
+	response.send('What are you doing here? Go away.');
 });
 
 app.get('/jquery', function(request, response) {
-
 	response.send('<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>');
 });
 
-
-/*
-* 	POST expects:
-*
-*	auth token -- facebook access token
-*	uuid -- representing our phone
-*	lat,lng -- geolocation
-*	timestamp since epoch
-*
-*	Example: $.post('/',{auth_token: '123123123', uuid: '123123123123', lat: 10.12313, lng: 123.312313, timestamp: 1231321314213})
-*/
 
 var query = function(query,callback,error) {
 	console.log('query',query);
@@ -66,7 +54,8 @@ var createUser = function(uuid, callback) {
 var createHandshake = function(user_id,lat,lng,timestamp,location_threshold,timestamp_threshold,callback){
 	var create_handshake = 'INSERT INTO shakes (user_id, lat, lng, timestamp, created) VALUES ('+user_id+','+lat+','+lng+',FROM_UNIXTIME('+timestamp+'), NOW()) ON DUPLICATE KEY UPDATE id= LAST_INSERT_ID(id)';
 	query(create_handshake,function(rows){
-
+		timestamp_threshold /= 2;
+		location_threshold /= 2;
 		var grab_partner = '	SELECT *, \
 								ABS(UNIX_TIMESTAMP(timestamp)-'+timestamp+'), ABS(lat-'+lat+'), ABS(lng-'+lng+') \
 								FROM shakes WHERE 1=1 \
@@ -111,6 +100,26 @@ app.post('/shakes/add', function(request, res) {
 
 });
 
+// only for testing purposes
+app.get('/shakes', function(request, res) {
+	var query_string = 'SELECT u.uuid, s.lat, s.lng, s.timestamp, a.access_token FROM shakes s LEFT JOIN users u ON u.id = s.user_id LEFT JOIN access_tokens a ON a.user_id = u.id ';
+	query(query_string,function(rows){
+		var users = {};
+		for (var i=0;i<rows.length;i++) {
+			var row = rows[i];
+			var uuid = row['uuid'];
+			var access_token = row['access_token'];
+			if (! users[uuid]) { users[uuid] = [];}
+			//if (! users[uuid][access_token]) { users[uuid][access_token] = [];}
+
+			//users[uuid][access_token].push({lat : row.lat, lng : row.lng, timestamp : row.timestamp});
+			users[uuid].push({lat : row.lat, lng : row.lng, timestamp : row.timestamp, access_token : access_token});
+		}
+		res.json({users : users});
+	});
+
+});
+
 
 
 
@@ -119,6 +128,9 @@ app.listen(port, function() {
     console.log("Listening on " + port);
 
 });
+
+
+
 
 
 
