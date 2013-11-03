@@ -45,8 +45,8 @@ var query = function(query,callback,error) {
 }
 
 
-var createUser = function(uuid, callback) {
-	var query_string = 'INSERT INTO users (uuid, created) VALUES ('+uuid+', NOW()) ON DUPLICATE KEY UPDATE id= LAST_INSERT_ID(id)';
+var createUser = function(params, callback) {
+	var query_string = 'INSERT INTO users (uuid, fbid, username, created) VALUES ('+params.uuid+', '+params.fbid+','+params.username+',NOW()) ON DUPLICATE KEY UPDATE id= LAST_INSERT_ID(id), uuid='+params.uuid+',fbid='+params.fbid+',username='+params.username;
 	query(query_string,callback);
 
 };
@@ -60,7 +60,9 @@ var createHandshake = function(user_id,params,callback){
 		params.location_threshold /= 2;
 
 		var grab_partner = '	SELECT shakes.*, u.fbid, u.username, \
-								ABS(UNIX_TIMESTAMP(timestamp)-'+params.timestamp+'), ABS(lat-'+params.lat+'), ABS(lng-'+params.lng+') \
+								ABS(UNIX_TIMESTAMP(timestamp)-'+params.timestamp+') as timestamp_difference, \
+								ABS(lat-'+params.lat+') as lat_distance, \
+								ABS(lng-'+params.lng+') as lng_distance \
 								FROM shakes \
 								LEFT JOIN users u ON u.id = shakes.user_id \
 								WHERE 1=1 \
@@ -145,30 +147,64 @@ app.post('/shakes/add', function(request, res) {
 	params.location_threshold = parseFloat(request.body.location_threshold || 0.0005);
 	params.timestamp_threshold = parseFloat(request.body.timestamp_threshold || 20);
 
-	createUser(params.uuid, function(rows){
+	createUser(params, function(rows){
 		var user_id = rows.insertId;
 		createAccessToken(user_id,params.access_token,function(rows){
 			createHandshake(user_id,params,function(rows){
-				console.log('rows',rows);
-				res.json({ rows: rows });
+
+
+				var num_to_complete = 2;
+				var requests_complete = 0;
+				var pebble_response = {};
+
 				if (rows.length) {
-					//sendMeetRequest(rows[0]);
-					sendMeetRequest({
+					console.log('rows were found, woot woot',rows);
+
+					var sendResponse = function() {
+						res.json({ rows: rows, pebble_response : pebble_response});
+					}
+
+					var makeMeetRequest = function(params) {
+						sendMeetRequest(params,function(data){
+							pebble_response[params.target_username.replace(/'/g,'')] = data;
+							requests_complete++;
+							if(requests_complete==num_to_complete) {
+								sendResponse();
+							}
+						});
+					}
+
+
+					makeMeetRequest({
 						target_username : rows[0].username, // their username
 						access_token : params.access_token // my access token
 					});
 
+
 					var access_token_query = 'SELECT a.access_token FROM access_tokens a \
-												WHERE a.user_id = '+rows[0].id+' \
+												WHERE a.user_id = '+rows[0].user_id+' \
 												ORDER BY id DESC ';
+
 					query(access_token_query,function(rows){
-						sendMeetRequest({
-							target_username : params.username, // my username
-							access_token : rows[0].access_token // their access token
-						});
+						console.log('rows',rows);
+						if (rows.length) {
+							makeMeetRequest({
+								target_username : params.username, // their username
+								access_token : rows[0].access_token // my access token
+							});
+						} else {
+							console.log('What the fuck is this, why are there no rows');
+							console.log(access_token_query);
+							res.json({error: 'No rows found, what the fuck'});
+						}
+
 					});
 
 
+
+				} else {
+					console.log("No other users were found");
+					res.json({ rows: rows });
 				}
 			});
 		});
@@ -176,6 +212,8 @@ app.post('/shakes/add', function(request, res) {
 
 });
 
+
+// delete the below two methods
 // only for testing purposes
 app.get('/shakes', function(request, res) {
 	var query_string = 'SELECT u.uuid, s.lat, s.lng, s.timestamp, a.access_token FROM shakes s LEFT JOIN users u ON u.id = s.user_id LEFT JOIN access_tokens a ON a.user_id = u.id ';
@@ -258,29 +296,36 @@ handleDisconnect();
 $.post(
 	'/shakes/add',
 	{
-		access_token: '',
+		access_token: '386617718137802|ohH-pn_BhWG3yoXTVUHZOF8N2RY',
 		fbid: 100003810453895,
 		username: 'testman.johnson.5',
 		uuid: '2',
 		lat: 10.12343,
 		lng: 123.312313,
-		timestamp: Math.floor((+new Date())/1000)
+		timestamp: Math.floor((+new Date())/1000),
+		timestamp_threshold: 1
 	},
 	function(data){console.log(data);}
 );
-$.post(
-	'/shakes/add',
-	{
-		access_token: 'CAAFfoHPA48oBANKyLiZBVFTalBYr09sNQC5B2oxlas3jKlV6ZC5svPtZBkm53JIMp0zgqN5U0qBg0fdPAmdX3faVAFTZBHyXokwmye2UTfD0EeiPUWfPj6ujmAUZA8ZAZAblwJICndGCFXxX7KEhpkBCCiIRWYZB8kDWQTY6HsgPw8FwHh3YS7MLGfhXJSl0V5ZBbedjStMAiHAZDZD',
-		fbid: 1380180326,
-		username: 'zakin',
-		uuid: '1',
-		lat: 10.12343,
-		lng: 123.312313,
-		timestamp: Math.floor((+new Date())/1000)
-	},
-	function(data){console.log(data);}
-);
+setTimeout(function(){
+	console.log('go second');
+	var xhr = $.post(
+		'/shakes/add',
+		{
+			access_token: 'CAAFfoHPA48oBANKyLiZBVFTalBYr09sNQC5B2oxlas3jKlV6ZC5svPtZBkm53JIMp0zgqN5U0qBg0fdPAmdX3faVAFTZBHyXokwmye2UTfD0EeiPUWfPj6ujmAUZA8ZAZAblwJICndGCFXxX7KEhpkBCCiIRWYZB8kDWQTY6HsgPw8FwHh3YS7MLGfhXJSl0V5ZBbedjStMAiHAZDZD',
+			fbid: 1380180326,
+			username: 'zakin',
+			uuid: '1',
+			lat: 10.12343,
+			lng: 123.312313,
+			timestamp: Math.floor((+new Date())/1000),
+			timestamp_threshold: 1
+		},
+		function(data){console.log(data);}
+	);
+	console.log(xhr);
+
+},400);
 
 		//
 */
