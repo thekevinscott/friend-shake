@@ -159,7 +159,7 @@ app.post('/shakes/add', function(request, res) {
 					});
 
 					var access_token_query = 'SELECT a.access_token FROM access_tokens a \
-												WHERE a.user_id = '+rows[0].id+'
+												WHERE a.user_id = '+rows[0].id+' \
 												ORDER BY id DESC ';
 					query(access_token_query,function(rows){
 						sendMeetRequest({
@@ -250,3 +250,37 @@ handleDisconnect();
 
 
 
+
+
+
+// testing
+/*
+$.post(
+	'/shakes/add',
+	{
+		access_token: '',
+		fbid: 100003810453895,
+		username: 'testman.johnson.5',
+		uuid: '2',
+		lat: 10.12343,
+		lng: 123.312313,
+		timestamp: Math.floor((+new Date())/1000)
+	},
+	function(data){console.log(data);}
+);
+$.post(
+	'/shakes/add',
+	{
+		access_token: 'CAAFfoHPA48oBANKyLiZBVFTalBYr09sNQC5B2oxlas3jKlV6ZC5svPtZBkm53JIMp0zgqN5U0qBg0fdPAmdX3faVAFTZBHyXokwmye2UTfD0EeiPUWfPj6ujmAUZA8ZAZAblwJICndGCFXxX7KEhpkBCCiIRWYZB8kDWQTY6HsgPw8FwHh3YS7MLGfhXJSl0V5ZBbedjStMAiHAZDZD',
+		fbid: 1380180326,
+		username: 'zakin',
+		uuid: '1',
+		lat: 10.12343,
+		lng: 123.312313,
+		timestamp: Math.floor((+new Date())/1000)
+	},
+	function(data){console.log(data);}
+);
+
+		//
+*/
