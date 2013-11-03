@@ -89,9 +89,13 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 -d profile=http%3A%2F%2Ffacebook.com/chrismaddern
 -d access_token=ACCESS_TOKEN
 */
+
+	row.target_username = row.target_username.replace(/'/g,'');
+	row.access_token = row.access_token.replace(/'/g,'');
+
 	var post_data = querystring.stringify({
 	      'profile' : 'http://facebook.com/'+row.target_username,
-	      'access_token': row.access_token.replace(/'/g,'')
+	      'access_token': row.access_token
 	  });
 	var options = {
 	  host: 'graph.facebook.com',
@@ -170,7 +174,7 @@ app.post('/shakes/add', function(request, res) {
 					}
 
 					var makeMeetRequest = function(params) {
-						console.log('params',params);
+
 						sendMeetRequest(params,function(data){
 							pebble_response[params.me.replace(/'/g,'')] = data;
 							requests_complete++;
