@@ -1,7 +1,7 @@
 var express = require("express");
 var app = express();
-
-
+var https = require("https");
+var querystring = require("querystring");
 
 app.use(express.logger());
 app.use(express.bodyParser());
@@ -32,11 +32,11 @@ app.get('/jquery', function(request, response) {
 
 
 var query = function(query,callback,error) {
-	console.log('query',query);
+
 	connection.query(query, function(err, rows, fields) {
 		if (err) {
 			if (error) { error(err);}
-			else { console.log('err',err); }
+			else { console.log('query',query); console.log('err',err); }
 		} else {
 
 			callback(rows);
@@ -51,20 +51,25 @@ var createUser = function(uuid, callback) {
 
 };
 
-var createHandshake = function(user_id,lat,lng,timestamp,location_threshold,timestamp_threshold,callback){
-	var create_handshake = 'INSERT INTO shakes (user_id, lat, lng, timestamp, created) VALUES ('+user_id+','+lat+','+lng+',FROM_UNIXTIME('+timestamp+'), NOW()) ON DUPLICATE KEY UPDATE id= LAST_INSERT_ID(id)';
+var createHandshake = function(user_id,params,callback){
+	var create_handshake = 'INSERT INTO shakes (user_id, lat, lng, timestamp, created) VALUES ('+user_id+','+params.lat+','+params.lng+',FROM_UNIXTIME('+params.timestamp+'), NOW()) ON DUPLICATE KEY UPDATE id= LAST_INSERT_ID(id)';
+
 	query(create_handshake,function(rows){
-		timestamp_threshold /= 2;
-		location_threshold /= 2;
-		var grab_partner = '	SELECT *, \
-								ABS(UNIX_TIMESTAMP(timestamp)-'+timestamp+'), ABS(lat-'+lat+'), ABS(lng-'+lng+') \
-								FROM shakes WHERE 1=1 \
-									AND timestamp >= DATE_SUB(FROM_UNIXTIME('+timestamp+'),INTERVAL '+timestamp_threshold+' SECOND) \
-									AND timestamp <= DATE_ADD(FROM_UNIXTIME('+timestamp+'),INTERVAL '+timestamp_threshold+' SECOND) \
-									AND lat >= '+lat+'-'+location_threshold+' \
-									AND lat <= '+lat+'+'+location_threshold+' \
-									AND lng >= '+lng+'-'+location_threshold+' \
-									AND lng <= '+lng+'+'+location_threshold+' \
+
+		params.timestamp_threshold /= 2;
+		params.location_threshold /= 2;
+
+		var grab_partner = '	SELECT shakes.*, u.fbid, u.username, \
+								ABS(UNIX_TIMESTAMP(timestamp)-'+params.timestamp+'), ABS(lat-'+params.lat+'), ABS(lng-'+params.lng+') \
+								FROM shakes \
+								LEFT JOIN users u ON u.id = shakes.user_id \
+								WHERE 1=1 \
+									AND timestamp >= DATE_SUB(FROM_UNIXTIME('+params.timestamp+'),INTERVAL '+params.timestamp_threshold+' SECOND) \
+									AND timestamp <= DATE_ADD(FROM_UNIXTIME('+params.timestamp+'),INTERVAL '+params.timestamp_threshold+' SECOND) \
+									AND lat >= '+params.lat+'-'+params.location_threshold+' \
+									AND lat <= '+params.lat+'+'+params.location_threshold+' \
+									AND lng >= '+params.lng+'-'+params.location_threshold+' \
+									AND lng <= '+params.lng+'+'+params.location_threshold+' \
 									AND user_id != '+user_id+' \
 							';
 		query(grab_partner,callback);
@@ -75,25 +80,80 @@ var createAccessToken = function(user_id,access_token,callback){
 	var query_string = 'INSERT INTO access_tokens (user_id, access_token, created) VALUES ('+user_id+','+access_token+', NOW()) ON DUPLICATE KEY UPDATE id= LAST_INSERT_ID(id)';
 	query(query_string,callback);
 };
+
+var sendMeetRequest = function(row, callback) {
+/*
+curl -X POST https://graph.facebook.com/me/shakepebble:meet
+-d profile=http%3A%2F%2Ffacebook.com/chrismaddern
+-d access_token=ACCESS_TOKEN
+*/
+	var post_data = querystring.stringify({
+	      'profile' : 'http://facebook.com/'+row.target_username,
+	      'access_token': row.access_token
+	  });
+	var options = {
+	  host: 'graph.facebook.com',
+	  port: 443,
+	  path: '/me/shakepebble:meet',
+	  method: 'POST',
+	  headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Length': post_data.length
+      }
+	};
+	var body = '';
+
+	var req = https.request(options, function(res) {
+	  console.log('STATUS: ' + res.statusCode);
+	  console.log('HEADERS: ' + JSON.stringify(res.headers));
+	  res.setEncoding('utf8');
+	  res.on('data', function (chunk) {
+	    console.log('BODY: ' + chunk);
+	    body += chunk;
+	    // req.close();
+	  });
+	  res.on('end',function () {
+	  	console.log('close');
+	  	callback(body);
+	  });
+	});
+
+	req.on('error', function(e) {
+	  console.log('problem with request: ' + e.message);
+	});
+
+	// write data to request body
+	req.write(post_data);
+	req.end();
+
+}
+
 app.post('/shakes/add', function(request, res) {
 
+	var params = {};
+	var required = ['access_token','uuid','fbid','username','lat','lng','timestamp'];
 
+	for (var i in required) {
+		var require = required[i];
+		if (! request.body[require]) {
+			res.json({error : "Missing field " + require});
+			return;
+		}
+		params[require] = connection.escape(request.body[require]);
+	}
 
-	var access_token = connection.escape(request.body.access_token);
-	var uuid = connection.escape(request.body.uuid);
-	var lat = connection.escape(request.body.lat);
-	var lng = connection.escape(request.body.lng);
-	var timestamp = connection.escape(request.body.timestamp);
+	params.location_threshold = parseFloat(request.body.location_threshold || 0.0005);
+	params.timestamp_threshold = parseFloat(request.body.timestamp_threshold || 20);
 
-	var location_threshold = connection.escape(request.body.location_threshold || 0.0005);
-	var timestamp_threshold = connection.escape(request.body.timestamp_threshold || 20);
-
-	createUser(uuid, function(rows){
+	createUser(params.uuid, function(rows){
 		var user_id = rows.insertId;
-		createAccessToken(user_id,access_token,function(rows){
-			createHandshake(user_id,lat,lng,timestamp,location_threshold,timestamp_threshold,function(rows){
+		createAccessToken(user_id,params.access_token,function(rows){
+			createHandshake(user_id,params,function(rows){
 				console.log('rows',rows);
-				res.json({ rows: rows })
+				res.json({ rows: rows });
+				if (rows.length) {
+					sendMeetRequest(rows[0]);
+				}
 			});
 		});
 	});
@@ -118,6 +178,17 @@ app.get('/shakes', function(request, res) {
 		res.json({users : users});
 	});
 
+});
+
+// send a meet request
+app.get('/meet',function(request,res){
+	sendMeetRequest({
+		target_username : 'testman.johnson.5',
+		access_token : 'CAAFfoHPA48oBANKyLiZBVFTalBYr09sNQC5B2oxlas3jKlV6ZC5svPtZBkm53JIMp0zgqN5U0qBg0fdPAmdX3faVAFTZBHyXokwmye2UTfD0EeiPUWfPj6ujmAUZA8ZAZAblwJICndGCFXxX7KEhpkBCCiIRWYZB8kDWQTY6HsgPw8FwHh3YS7MLGfhXJSl0V5ZBbedjStMAiHAZDZD'
+	},function(data){
+		res.write(data);
+		res.end();
+	});
 });
 
 
@@ -158,3 +229,8 @@ function handleDisconnect() {
 }
 
 handleDisconnect();
+
+
+
+
+
