@@ -105,6 +105,11 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 	};
 	var body = '';
 
+	console.log('CURL Request');
+	console.log('curl -X POST https://graph.facebook.com/me/shakepebble:meet \
+-d profile=http%3A%2F%2Ffacebook.com/'+row.target_username+' \
+-d access_token='+row.access_token);
+
 	var req = https.request(options, function(res) {
 	  // console.log('STATUS: ' + res.statusCode);
 	  // console.log('HEADERS: ' + JSON.stringify(res.headers));
