@@ -26,9 +26,6 @@ app.get('/', function(request, response) {
 	response.send('What are you doing here? Go away.');
 });
 
-app.get('/jquery', function(request, response) {
-	response.send('<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>');
-});
 
 
 var query = function(query,callback,error) {
