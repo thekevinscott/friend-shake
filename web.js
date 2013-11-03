@@ -104,22 +104,22 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 	var body = '';
 
 	var req = https.request(options, function(res) {
-	  console.log('STATUS: ' + res.statusCode);
-	  console.log('HEADERS: ' + JSON.stringify(res.headers));
+	  // console.log('STATUS: ' + res.statusCode);
+	  // console.log('HEADERS: ' + JSON.stringify(res.headers));
 	  res.setEncoding('utf8');
 	  res.on('data', function (chunk) {
-	    console.log('BODY: ' + chunk);
+	    // console.log('BODY: ' + chunk);
 	    body += chunk;
 	    // req.close();
 	  });
 	  res.on('end',function () {
-	  	console.log('close');
-	  	callback(body);
+	  	// console.log('close');
+	  	if (callback) { callback(body); }
 	  });
 	});
 
 	req.on('error', function(e) {
-	  console.log('problem with request: ' + e.message);
+	  console.log('problem with CURL request: ' + e.message);
 	});
 
 	// write data to request body
@@ -152,7 +152,23 @@ app.post('/shakes/add', function(request, res) {
 				console.log('rows',rows);
 				res.json({ rows: rows });
 				if (rows.length) {
-					sendMeetRequest(rows[0]);
+					//sendMeetRequest(rows[0]);
+					sendMeetRequest({
+						target_username : rows[0].username, // their username
+						access_token : params.access_token // my access token
+					});
+
+					var access_token_query = 'SELECT a.access_token FROM access_tokens a \
+												WHERE a.user_id = '+rows[0].id+'
+												ORDER BY id DESC ';
+					query(access_token_query,function(rows){
+						sendMeetRequest({
+							target_username : params.username, // my username
+							access_token : rows[0].access_token // their access token
+						});
+					});
+
+
 				}
 			});
 		});
