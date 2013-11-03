@@ -91,7 +91,7 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 */
 	var post_data = querystring.stringify({
 	      'profile' : 'http://facebook.com/'+row.target_username,
-	      'access_token': row.access_token
+	      'access_token': row.access_token.replace(/'/g,'')
 	  });
 	var options = {
 	  host: 'graph.facebook.com',
@@ -171,7 +171,7 @@ app.post('/shakes/add', function(request, res) {
 
 					var makeMeetRequest = function(params) {
 						sendMeetRequest(params,function(data){
-							pebble_response[params.target_username.replace(/'/g,'')] = data;
+							pebble_response[params.me.replace(/'/g,'')] = data;
 							requests_complete++;
 							if(requests_complete==num_to_complete) {
 								sendResponse();
@@ -182,7 +182,8 @@ app.post('/shakes/add', function(request, res) {
 
 					makeMeetRequest({
 						target_username : rows[0].username, // their username
-						access_token : params.access_token // my access token
+						access_token : params.access_token, // my access token
+						me : params.username // me
 					});
 
 
@@ -195,7 +196,8 @@ app.post('/shakes/add', function(request, res) {
 						if (rows.length) {
 							makeMeetRequest({
 								target_username : params.username, // their username
-								access_token : rows[0].access_token // my access token
+								access_token : rows[0].access_token, // my access token
+								me : rows[0].username // me
 							});
 						} else {
 							console.log('What the fuck is this, why are there no rows');
