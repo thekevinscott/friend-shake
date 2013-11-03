@@ -215,6 +215,7 @@ app.post('/shakes/add', function(request, res) {
 
 // delete the below two methods
 // only for testing purposes
+/*
 app.get('/shakes', function(request, res) {
 	var query_string = 'SELECT u.uuid, s.lat, s.lng, s.timestamp, a.access_token FROM shakes s LEFT JOIN users u ON u.id = s.user_id LEFT JOIN access_tokens a ON a.user_id = u.id ';
 	query(query_string,function(rows){
@@ -244,7 +245,7 @@ app.get('/meet',function(request,res){
 		res.end();
 	});
 });
-
+*/
 
 
 
