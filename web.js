@@ -170,6 +170,7 @@ app.post('/shakes/add', function(request, res) {
 					}
 
 					var makeMeetRequest = function(params) {
+						console.log('params',params);
 						sendMeetRequest(params,function(data){
 							pebble_response[params.me.replace(/'/g,'')] = data;
 							requests_complete++;
@@ -187,9 +188,10 @@ app.post('/shakes/add', function(request, res) {
 					});
 
 
-					var access_token_query = 'SELECT a.access_token FROM access_tokens a \
+					var access_token_query = 'SELECT a.access_token, u.username FROM access_tokens a \
+												LEFT JOIN users u ON u.id = a.user_id \
 												WHERE a.user_id = '+rows[0].user_id+' \
-												ORDER BY id DESC ';
+												ORDER BY a.id DESC ';
 
 					query(access_token_query,function(rows){
 						console.log('rows',rows);
