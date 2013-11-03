@@ -293,6 +293,7 @@ handleDisconnect();
 
 // testing
 /*
+var timestamp = Math.floor((+new Date())/1000);
 $.post(
 	'/shakes/add',
 	{
@@ -302,7 +303,7 @@ $.post(
 		uuid: '2',
 		lat: 10.12343,
 		lng: 123.312313,
-		timestamp: Math.floor((+new Date())/1000),
+		timestamp: timestamp,
 		timestamp_threshold: 1
 	},
 	function(data){console.log(data);}
@@ -318,14 +319,14 @@ setTimeout(function(){
 			uuid: '1',
 			lat: 10.12343,
 			lng: 123.312313,
-			timestamp: Math.floor((+new Date())/1000),
+			timestamp: timestamp,
 			timestamp_threshold: 1
 		},
 		function(data){console.log(data);}
 	);
 	console.log(xhr);
 
-},400);
+},1400);
 
 		//
 */
