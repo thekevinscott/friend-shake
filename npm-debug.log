@@ -1,0 +1,91 @@
+0 info it worked if it ends with ok
+1 verbose cli [ 'node',
+1 verbose cli   '/usr/local/bin/npm',
+1 verbose cli   'install',
+1 verbose cli   '--registry',
+1 verbose cli   'http://npm.nodejs.org.au:5984/registry/_design/app/_rewrite' ]
+2 info using npm@1.3.8
+3 info using node@v0.10.18
+4 warn package.json friend-shake@0.0.1 No repository field.
+5 warn package.json friend-shake@0.0.1 No README data
+6 info shrinkwrap file "/Users/kevinscott/Code/friendshake-testing/npm-shrinkwrap.json"
+7 verbose readDependencies returned deps { express: '3.1.2',
+7 verbose readDependencies returned deps   mysql: 'https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz' }
+8 verbose install where, deps [ '/Users/kevinscott/Code/friendshake-testing',
+8 verbose install   [ 'express', 'mysql' ] ]
+9 info preinstall friend-shake@0.0.1
+10 info shrinkwrap file "/Users/kevinscott/Code/friendshake-testing/npm-shrinkwrap.json"
+11 verbose readDependencies returned deps { express: '3.1.2',
+11 verbose readDependencies returned deps   mysql: 'https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz' }
+12 verbose cache add [ 'mysql@https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz',
+12 verbose cache add   null ]
+13 verbose cache add name=undefined spec="mysql@https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz" args=["mysql@https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz",null]
+14 verbose parsed url { protocol: null,
+14 verbose parsed url   slashes: null,
+14 verbose parsed url   auth: null,
+14 verbose parsed url   host: null,
+14 verbose parsed url   port: null,
+14 verbose parsed url   hostname: null,
+14 verbose parsed url   hash: null,
+14 verbose parsed url   search: null,
+14 verbose parsed url   query: null,
+14 verbose parsed url   pathname: 'mysql@https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz',
+14 verbose parsed url   path: 'mysql@https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz',
+14 verbose parsed url   href: 'mysql@https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz' }
+15 verbose cache add name="mysql" spec="https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz" args=["mysql","https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz"]
+16 verbose parsed url { protocol: 'https:',
+16 verbose parsed url   slashes: true,
+16 verbose parsed url   auth: null,
+16 verbose parsed url   host: 'registry.npmjs.org',
+16 verbose parsed url   port: null,
+16 verbose parsed url   hostname: 'registry.npmjs.org',
+16 verbose parsed url   hash: null,
+16 verbose parsed url   search: null,
+16 verbose parsed url   query: null,
+16 verbose parsed url   pathname: '/mysql/-/mysql-2.0.0-alpha9.tgz',
+16 verbose parsed url   path: '/mysql/-/mysql-2.0.0-alpha9.tgz',
+16 verbose parsed url   href: 'https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz' }
+17 verbose already installed skipping express@3.1.2 /Users/kevinscott/Code/friendshake-testing
+18 silly lockFile bc27578c-org-mysql-mysql-2-0-0-alpha9-tgz https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz
+19 verbose lock https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz /Users/kevinscott/.npm/bc27578c-org-mysql-mysql-2-0-0-alpha9-tgz.lock
+20 verbose addRemoteTarball [ 'https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz',
+20 verbose addRemoteTarball   null ]
+21 info retry fetch attempt 1 at 16:38:21
+22 verbose fetch to= /var/folders/hh/tgm2cyvs40j5q2vhmgtsnxh80000gn/T/npm-14893-QtjngCg0/1383601052503-0.6066426138859242/tmp.tgz
+23 http GET https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz
+24 error fetch failed https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz
+25 info retry will retry, error on last attempt: Error: UNABLE_TO_VERIFY_LEAF_SIGNATURE
+26 info retry fetch attempt 2 at 16:38:31
+27 verbose fetch to= /var/folders/hh/tgm2cyvs40j5q2vhmgtsnxh80000gn/T/npm-14893-QtjngCg0/1383601052503-0.6066426138859242/tmp.tgz
+28 http GET https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz
+29 error fetch failed https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz
+30 info retry will retry, error on last attempt: Error: UNABLE_TO_VERIFY_LEAF_SIGNATURE
+31 info retry fetch attempt 3 at 16:39:31
+32 verbose fetch to= /var/folders/hh/tgm2cyvs40j5q2vhmgtsnxh80000gn/T/npm-14893-QtjngCg0/1383601052503-0.6066426138859242/tmp.tgz
+33 http GET https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz
+34 error fetch failed https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz
+35 silly lockFile bc27578c-org-mysql-mysql-2-0-0-alpha9-tgz https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz
+36 silly lockFile bc27578c-org-mysql-mysql-2-0-0-alpha9-tgz https://registry.npmjs.org/mysql/-/mysql-2.0.0-alpha9.tgz
+37 error Error: UNABLE_TO_VERIFY_LEAF_SIGNATURE
+37 error     at SecurePair.<anonymous> (tls.js:1357:32)
+37 error     at SecurePair.EventEmitter.emit (events.js:92:17)
+37 error     at SecurePair.maybeInitFinished (tls.js:970:10)
+37 error     at CleartextStream.read [as _read] (tls.js:463:15)
+37 error     at CleartextStream.Readable.read (_stream_readable.js:320:10)
+37 error     at EncryptedStream.write [as _write] (tls.js:366:25)
+37 error     at doWrite (_stream_writable.js:221:10)
+37 error     at writeOrBuffer (_stream_writable.js:211:5)
+37 error     at EncryptedStream.Writable.write (_stream_writable.js:180:11)
+37 error     at write (_stream_readable.js:583:24)
+37 error     at flow (_stream_readable.js:592:7)
+37 error     at Socket.pipeOnReadable (_stream_readable.js:624:5)
+38 error If you need help, you may report this log at:
+38 error     <http://github.com/isaacs/npm/issues>
+38 error or email it to:
+38 error     <npm-@googlegroups.com>
+39 error System Darwin 13.0.0
+40 error command "node" "/usr/local/bin/npm" "install" "--registry" "http://npm.nodejs.org.au:5984/registry/_design/app/_rewrite"
+41 error cwd /Users/kevinscott/Code/friendshake-testing
+42 error node -v v0.10.18
+43 error npm -v 1.3.8
+44 verbose exit [ 1, true ]
