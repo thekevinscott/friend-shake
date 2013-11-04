@@ -7,7 +7,7 @@ app.use(express.logger());
 app.use(express.bodyParser());
 
 
-var mysql      = require('node-mysql');
+var mysql      = require('mysql');
 var db_config = {
 	  host     : 'us-cdbr-east-04.cleardb.com',
 	  user     : 'b6204b17cbb96d',
