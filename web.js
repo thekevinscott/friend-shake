@@ -39,19 +39,19 @@ var query = function(query,callback,error) {
 			else { console.log('query',query); console.log('err',err); }
 		} else {
 
-			callback(rows);
+			if (callback) { callback(rows); }
 		}
 	});
 }
 
 
-var createUser = function(params, callback) {
+var createUser = function(params, callback, error_callback) {
 	var query_string = 'INSERT INTO users (uuid, fbid, username, created) VALUES ('+params.uuid+', '+params.fbid+','+params.username+',NOW()) ON DUPLICATE KEY UPDATE id= LAST_INSERT_ID(id), uuid='+params.uuid+',fbid='+params.fbid+',username='+params.username;
-	query(query_string,callback);
+	query(query_string,callback,error_callback);
 
 };
 
-var createHandshake = function(user_id,params,callback){
+var createHandshake = function(user_id,params,callback,error_callback){
 	var create_handshake = 'INSERT INTO shakes (user_id, lat, lng, timestamp, created) VALUES ('+user_id+','+params.lat+','+params.lng+',FROM_UNIXTIME('+params.timestamp+'), NOW()) ON DUPLICATE KEY UPDATE id= LAST_INSERT_ID(id)';
 
 	query(create_handshake,function(rows){
@@ -74,13 +74,13 @@ var createHandshake = function(user_id,params,callback){
 									AND lng <= '+params.lng+'+'+params.location_threshold+' \
 									AND user_id != '+user_id+' \
 							';
-		query(grab_partner,callback);
-	});
+		query(grab_partner,callback,error_callback);
+	},error_callback);
 };
 
-var createAccessToken = function(user_id,access_token,callback){
+var createAccessToken = function(user_id,access_token,callback,error_callback){
 	var query_string = 'INSERT INTO access_tokens (user_id, access_token, created) VALUES ('+user_id+','+access_token+', NOW()) ON DUPLICATE KEY UPDATE id= LAST_INSERT_ID(id)';
-	query(query_string,callback);
+	query(query_string,callback,error_callback);
 };
 
 var sendMeetRequest = function(row, callback) {
@@ -154,73 +154,92 @@ app.post('/shakes/add', function(request, res) {
 	}
 
 	params.location_threshold = parseFloat(request.body.location_threshold || 0.0005);
-	params.timestamp_threshold = parseFloat(request.body.timestamp_threshold || 20);
+	params.timestamp_threshold = parseFloat(request.body.timestamp_threshold || 10);
 
 	createUser(params, function(rows){
 		var user_id = rows.insertId;
+		var username = params.username;
 		createAccessToken(user_id,params.access_token,function(rows){
 			createHandshake(user_id,params,function(rows){
 
 
-				var num_to_complete = 2;
-				var requests_complete = 0;
 				var pebble_response = {};
 
 				if (rows.length) {
 					console.log('rows were found, woot woot',rows);
+					// have we already made a meet request?
+					var meeting_query = "SELECT * FROM meetings \
+										WHERE created > DATE_SUB(NOW(), INTERVAL 1 MINUTE) \
+										AND user_a = "+user_id+" \
+										AND user_b = "+rows[0]['user_id']+" ";
 
-					var sendResponse = function() {
-						res.json({ rows: rows, pebble_response : pebble_response});
-					}
-
-					var makeMeetRequest = function(params) {
-
-						sendMeetRequest(params,function(data){
-							pebble_response[params.me.replace(/'/g,'')] = data;
-							requests_complete++;
-							if(requests_complete==num_to_complete) {
-								sendResponse();
-							}
-						});
-					}
-
-
-					makeMeetRequest({
-						target_username : rows[0].username, // their username
-						access_token : params.access_token, // my access token
-						me : params.username // me
-					});
-
-
-					var access_token_query = 'SELECT a.access_token, u.username FROM access_tokens a \
-												LEFT JOIN users u ON u.id = a.user_id \
-												WHERE a.user_id = '+rows[0].user_id+' \
-												ORDER BY a.id DESC ';
-
-					query(access_token_query,function(rows){
-						console.log('rows',rows);
-						if (rows.length) {
-							makeMeetRequest({
-								target_username : params.username, // their username
-								access_token : rows[0].access_token, // my access token
-								me : rows[0].username // me
+					query(meeting_query,function(meeting_rows){
+						if (! meeting_rows.length) {
+							console.log("**** go ahead and make the meeting: "+username.replace(/'/g,'')+" met "+rows[0]['username']+" ****");
+							query("INSERT INTO meetings (user_a,user_b,created) VALUES ('"+user_id+"','"+rows[0]['user_id']+"',NOW()) ", function(rows){
+								var meeting_id = rows.insertId;
 							});
+
+							// no meet request has been made, proceed
+
+							var sendResponse = function() {
+								res.json({ rows: rows, pebble_response : pebble_response});
+							}
+
+							var makeMeetRequest = function(params) {
+
+								sendMeetRequest(params,function(data){
+									pebble_response[params.me.replace(/'/g,'')] = data;
+									sendResponse();
+								});
+							}
+
+
+							makeMeetRequest({
+								target_username : rows[0].username, // their username
+								access_token : params.access_token, // my access token
+								me : params.username // me
+							});
+
+/*
+							var access_token_query = 'SELECT a.access_token, u.username FROM access_tokens a \
+														LEFT JOIN users u ON u.id = a.user_id \
+														WHERE a.user_id = '+rows[0].user_id+' \
+														ORDER BY a.id DESC ';
+
+							query(access_token_query,function(rows){
+								console.log('rows',rows);
+								if (rows.length) {
+									makeMeetRequest({
+										target_username : params.username, // their username
+										access_token : rows[0].access_token, // my access token
+										me : rows[0].username // me
+									});
+								} else {
+									console.log('What the fuck is this, why are there no rows');
+									console.log(access_token_query);
+									res.json({error: 'No rows found, what the fuck'});
+								}
+
+							});	*/
 						} else {
-							console.log('What the fuck is this, why are there no rows');
-							console.log(access_token_query);
-							res.json({error: 'No rows found, what the fuck'});
+							res.json({ message: 'A meeting has already happened between these users within the time threshold.' });
 						}
-
 					});
-
 
 
 				} else {
 					console.log("No other users were found");
 					res.json({ rows: rows });
 				}
+			},function(err){
+				res.json({err : err});
 			});
+		},function(err){
+			res.json({err : err});	
 		});
+	},function(err){
+		res.json({err : err});
 	});
 
 });
