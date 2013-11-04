@@ -152,6 +152,7 @@ app.post('/shakes/add', function(request, res) {
 		}
 		params[require] = connection.escape(request.body[require]);
 	}
+	console.log("params",params);
 
 	params.location_threshold = parseFloat(request.body.location_threshold || 0.0005);
 	params.timestamp_threshold = parseFloat(request.body.timestamp_threshold || 10);
