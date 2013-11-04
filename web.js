@@ -230,7 +230,7 @@ app.post('/shakes/add', function(request, res) {
 
 				} else {
 					console.log("No other users were found");
-					res.json({ rows: rows });
+					res.json({ message : 'User was successfully added. No other matching users were found', rows: rows });
 				}
 			},function(err){
 				res.json({err : err});
