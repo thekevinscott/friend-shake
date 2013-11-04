@@ -4,7 +4,7 @@
 	"description": "Shake your friends",
 	"dependencies": {
 		"express": "3.1.x",
-		"mysql":"2.0.0-alpha6"
+		"mysql":"<= 2.0.0-alpha7 "
 	},
 	"engines": {
 		"node": "0.10.x",
