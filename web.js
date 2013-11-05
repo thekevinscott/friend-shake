@@ -95,7 +95,8 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 
 	var post_data = querystring.stringify({
 	      'profile' : 'http://facebook.com/'+row.target_username,
-	      'access_token': row.access_token
+	      'access_token': row.access_token,
+              'explicitly_shared' : 'true'
 	  });
 	var options = {
 	  host: 'graph.facebook.com',
@@ -112,7 +113,9 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 	console.log('CURL Request');
 	console.log('curl -X POST https://graph.facebook.com/me/shakepebble:meet \
 -d profile=http%3A%2F%2Ffacebook.com/'+row.target_username+' \
--d access_token='+row.access_token);
+-d access_token='+row.access_token+' \
+-d fb:explicitly_shared=true'
+);
 
 	var req = https.request(options, function(res) {
 	  // console.log('STATUS: ' + res.statusCode);
