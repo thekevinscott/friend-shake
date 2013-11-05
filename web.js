@@ -152,6 +152,7 @@ app.post('/shakes/add', function(request, res) {
 		}
 		params[require] = connection.escape(request.body[require]);
 	}
+	console.log("params",params);
 
 	params.location_threshold = parseFloat(request.body.location_threshold || 0.0005);
 	params.timestamp_threshold = parseFloat(request.body.timestamp_threshold || 10);
@@ -167,6 +168,7 @@ app.post('/shakes/add', function(request, res) {
 
 				if (rows.length) {
 					console.log('rows were found, woot woot',rows);
+
 					// have we already made a meet request?
 					var meeting_query = "SELECT * FROM meetings \
 										WHERE created > DATE_SUB(NOW(), INTERVAL 1 MINUTE) \
@@ -176,52 +178,74 @@ app.post('/shakes/add', function(request, res) {
 					query(meeting_query,function(meeting_rows){
 						if (! meeting_rows.length) {
 							console.log("**** go ahead and make the meeting: "+username.replace(/'/g,'')+" met "+rows[0]['username']+" ****");
-							query("INSERT INTO meetings (user_a,user_b,created) VALUES ('"+user_id+"','"+rows[0]['user_id']+"',NOW()) ", function(rows){
-								var meeting_id = rows.insertId;
-							});
+							query("INSERT INTO meetings (user_a,user_b,created) VALUES ('"+user_id+"','"+rows[0]['user_id']+"',NOW()) ", function(m_rows){
+								var meeting_id = m_rows.insertId;
 
-							// no meet request has been made, proceed
+								// no meet request has been made, proceed
 
-							var sendResponse = function() {
-								res.json({ rows: rows, pebble_response : pebble_response});
-							}
-
-							var makeMeetRequest = function(params) {
-
-								sendMeetRequest(params,function(data){
-									pebble_response[params.me.replace(/'/g,'')] = data;
-									sendResponse();
-								});
-							}
-
-
-							makeMeetRequest({
-								target_username : rows[0].username, // their username
-								access_token : params.access_token, // my access token
-								me : params.username // me
-							});
-
-/*
-							var access_token_query = 'SELECT a.access_token, u.username FROM access_tokens a \
-														LEFT JOIN users u ON u.id = a.user_id \
-														WHERE a.user_id = '+rows[0].user_id+' \
-														ORDER BY a.id DESC ';
-
-							query(access_token_query,function(rows){
-								console.log('rows',rows);
-								if (rows.length) {
-									makeMeetRequest({
-										target_username : params.username, // their username
-										access_token : rows[0].access_token, // my access token
-										me : rows[0].username // me
-									});
-								} else {
-									console.log('What the fuck is this, why are there no rows');
-									console.log(access_token_query);
-									res.json({error: 'No rows found, what the fuck'});
+								var sendResponse = function() {
+									res.json({ rows: rows, pebble_response : pebble_response});
 								}
 
-							});	*/
+								var makeMeetRequest = function(params,callback) {
+
+									sendMeetRequest(params,function(data){
+										pebble_response[params.me.replace(/'/g,'')] = data;
+										
+										callback();
+									});
+								}
+
+
+								makeMeetRequest({
+									target_username : rows[0].username, // their username
+									access_token : params.access_token, // my access token
+									me : params.username // me
+								},function(){
+									// here we should check if we need to make a second query
+									var second_meeting_query = "SELECT * FROM meetings \
+														WHERE created > DATE_SUB(NOW(), INTERVAL 1 MINUTE) \
+														AND user_b = "+user_id+" \
+														AND user_a = "+rows[0]['user_id']+" ";
+									query(second_meeting_query,function(second_meeting_rows) {
+										if (! second_meeting_rows.length) {
+											console.log("**** go ahead and make the meeting: "+rows[0]['username'] +" met "+username.replace(/'/g,'')+" ****");
+											query("INSERT INTO meetings (user_a,user_b,created) VALUES ('"+user_id+"','"+rows[0]['user_id']+"',NOW()) ", function(m_rows){
+												var meeting_id2 = m_rows.insertId;
+												var access_token_query = 'SELECT a.access_token, u.username FROM access_tokens a \
+																			LEFT JOIN users u ON u.id = a.user_id \
+																			WHERE a.user_id = '+rows[0].user_id+' \
+																			ORDER BY a.id DESC ';
+
+												query(access_token_query,function(rows){
+													console.log('rows',rows);
+													if (rows.length) {
+														makeMeetRequest({
+															target_username : params.username, // their username
+															access_token : rows[0].access_token, // my access token
+															me : rows[0].username // me
+														},function(){
+															sendResponse();
+														});
+													} else {
+														console.log('What the fuck is this, why are there no rows');
+														console.log(access_token_query);
+														//res.json({error: 'No rows found, what the fuck'});
+													}
+
+												});
+											});
+											
+										} else {
+											sendResponse();
+										}
+									});
+								});
+							});
+
+
+/*
+								*/
 						} else {
 							res.json({ message: 'A meeting has already happened between these users within the time threshold.' });
 						}
