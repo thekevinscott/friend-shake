@@ -31,7 +31,7 @@ app.get('/jquery', function(request, response) {
 app.get('/meetings/*', function(request, response) {
 	var uuid = connection.escape(request.params[0]);
 	
-	var meetings_query = "SELECT s.timestamp, u.username FROM (SELECT m.created as timestamp, m.user_b as target_user \
+	var meetings_query = "SELECT s.timestamp, u.username, u.fbid, u.uuid, u.firstname FROM (SELECT m.created as timestamp, m.user_b as target_user \
 							FROM meetings m \
 							LEFT JOIN users u ON u.id = m.user_a \
 							WHERE u.uuid = "+uuid+" \
@@ -64,7 +64,7 @@ console.log('query',query);
 
 
 var createUser = function(params, callback, error_callback) {
-	var query_string = 'INSERT INTO users (uuid, fbid, username, created) VALUES ('+params.uuid+', '+params.fbid+','+params.username+',NOW()) ON DUPLICATE KEY UPDATE id= LAST_INSERT_ID(id), uuid='+params.uuid+',fbid='+params.fbid+',username='+params.username;
+	var query_string = 'INSERT INTO users (uuid, fbid, username, firstname, created) VALUES ('+params.uuid+', '+params.fbid+','+params.username+','+params.firstname+',NOW()) ON DUPLICATE KEY UPDATE id= LAST_INSERT_ID(id), uuid='+params.uuid+',fbid='+params.fbid+',username='+params.username;
 	query(query_string,callback,error_callback);
 
 };
@@ -76,11 +76,12 @@ var createHandshake = function(user_id,params,callback,error_callback){
 
 		params.timestamp_threshold /= 2;
 		params.location_threshold /= 2;
+		
+		var lat = parseFloat(params.lat.replace(/'/g,''));
+		var lng = parseFloat(params.lng.replace(/'/g,''));
+		
 
-		var lat = parseFloat(params.lat);
-		var lng = parseFloat(params.lng);
-
-		var grab_partner = '	SELECT shakes.*, u.fbid, u.username, \
+		var grab_partner = '	SELECT shakes.*, u.fbid, u.username, u.firstname, \
 								ABS(UNIX_TIMESTAMP(timestamp)-'+params.timestamp+') as timestamp_difference, \
 								ABS(lat-'+params.lat+') as lat_distance, \
 								ABS(lng-'+params.lng+') as lng_distance \
@@ -89,24 +90,11 @@ var createHandshake = function(user_id,params,callback,error_callback){
 								WHERE 1=1 \
 									AND timestamp >= DATE_SUB(FROM_UNIXTIME('+params.timestamp+'),INTERVAL '+params.timestamp_threshold+' SECOND) \
 									AND timestamp <= DATE_ADD(FROM_UNIXTIME('+params.timestamp+'),INTERVAL '+params.timestamp_threshold+' SECOND) \
-									AND user_id != '+user_id+' \
-							';
-							/*
-		var grab_partner = '	SELECT shakes.*, u.fbid, u.username, \
-								ABS(UNIX_TIMESTAMP(timestamp)-'+params.timestamp+') as timestamp_difference, \
-								ABS(lat-'+params.lat+') as lat_distance, \
-								ABS(lng-'+params.lng+') as lng_distance \
-								FROM shakes \
-								LEFT JOIN users u ON u.id = shakes.user_id \
-								WHERE 1=1 \
-									AND timestamp >= DATE_SUB(FROM_UNIXTIME('+params.timestamp+'),INTERVAL '+params.timestamp_threshold+' SECOND) \
-									AND timestamp <= DATE_ADD(FROM_UNIXTIME('+params.timestamp+'),INTERVAL '+params.timestamp_threshold+' SECOND) \
-									AND lat >= '+lat - params.location_threshold+' \
-									AND lat <= '+lat + params.location_threshold+' \
-									AND lng >= '+lng - params.location_threshold+' \
-									AND lng <= '+lng + params.location_threshold+' \
-									AND user_id != '+user_id+' \
-							';*/
+									AND lat >= '+(lat - params.location_threshold)+' \
+									AND lat <= '+(lat + params.location_threshold)+' \
+									AND lng >= '+(lng - params.location_threshold)+' \
+									AND lng <= '+(lng + params.location_threshold)+' \
+									AND user_id != '+user_id+' ';
 		query(grab_partner,callback,error_callback);
 	},error_callback);
 };
@@ -123,12 +111,13 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 -d access_token=ACCESS_TOKEN
 */
 
-	var actor_id = 15439;
+	var actor_id = row.id;
 	row.target_username = row.target_username.replace(/'/g,'');
 	row.access_token = row.access_token.replace(/'/g,'');
+	row.target_firstname = row.target_firstname.replace(/'/g,'');
 
 	var post_data = querystring.stringify({
-		  'message' : 'Actor met <a href="http://facebook.com/'+target_username+'">Chris</a>',
+		  'message' : row.firstname+' met <a href="http://facebook.com/'+row.target_username+'">'+row.target_firstname+'</a>',
 	      
 	      'access_token': row.access_token,
           'explicitly_shared' : 'true'
@@ -180,7 +169,7 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 app.post('/shakes/add', function(request, res) {
 
 	var params = {};
-	var required = ['access_token','uuid','fbid','username','lat','lng','timestamp'];
+	var required = ['access_token','uuid','fbid','username','firstname','lat','lng','timestamp'];
 
 	for (var i in required) {
 		var require = required[i];
@@ -226,19 +215,22 @@ app.post('/shakes/add', function(request, res) {
 								}
 
 								var makeMeetRequest = function(params,callback) {
-
+									console.log('params for meet request', params);
 									sendMeetRequest(params,function(data){
 										pebble_response[params.me.replace(/'/g,'')] = data;
-										
+										//console.log("do callback");
 										callback();
 									});
 								}
 
+								console.log('params at the top',params);
 
 								makeMeetRequest({
 									target_username : rows[0].username, // their username
+									target_firstname : rows[0].firstname, // their firstname
 									access_token : params.access_token, // my access token
-									me : params.username // me
+									me : params.username, // me
+									firstname : params.firstname
 								},function(){
 									// here we should check if we need to make a second query
 									var second_meeting_query = "SELECT * FROM meetings \
@@ -250,7 +242,7 @@ app.post('/shakes/add', function(request, res) {
 											console.log("**** go ahead and make the meeting: "+rows[0]['username'] +" met "+username.replace(/'/g,'')+" ****");
 											query("INSERT INTO meetings (user_a,user_b,created) VALUES ('"+user_id+"','"+rows[0]['user_id']+"',NOW()) ", function(m_rows){
 												var meeting_id2 = m_rows.insertId;
-												var access_token_query = 'SELECT a.access_token, u.username FROM access_tokens a \
+												var access_token_query = 'SELECT a.access_token, u.username, u.firstname FROM access_tokens a \
 																			LEFT JOIN users u ON u.id = a.user_id \
 																			WHERE a.user_id = '+rows[0].user_id+' \
 																			ORDER BY a.id DESC ';
@@ -258,10 +250,13 @@ app.post('/shakes/add', function(request, res) {
 												query(access_token_query,function(rows){
 													console.log('rows',rows);
 													if (rows.length) {
+
 														makeMeetRequest({
 															target_username : params.username, // their username
+															target_firstname : params.firstname, // their first name
 															access_token : rows[0].access_token, // my access token
-															me : rows[0].username // me
+															me : rows[0].username, // me
+															firstname : rows[0].firstname
 														},function(){
 															sendResponse();
 														});
