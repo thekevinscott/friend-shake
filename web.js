@@ -110,14 +110,17 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 -d profile=http%3A%2F%2Ffacebook.com/chrismaddern
 -d access_token=ACCESS_TOKEN
 */
-
-	var actor_id = row.id;
+	console.log('row in meet request',row);
+	var actor_id = row.fbid.replace(/'/g,'');
 	row.target_username = row.target_username.replace(/'/g,'');
 	row.access_token = row.access_token.replace(/'/g,'');
 	row.target_firstname = row.target_firstname.replace(/'/g,'');
+	row.firstname = row.firstname.replace(/'/g,'');
 
+	//var message = row.firstname+' met <a href="http://facebook.com/'+row.target_username+'">'+row.target_firstname+'</a>';
+	var message = row.firstname+'test';
 	var post_data = querystring.stringify({
-		  'message' : row.firstname+' met <a href="http://facebook.com/'+row.target_username+'">'+row.target_firstname+'</a>',
+		  'message' : message,
 	      
 	      'access_token': row.access_token,
           'explicitly_shared' : 'true'
@@ -133,10 +136,10 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
       }
 	};
 	var body = '';
-
+	console.log('post_data',post_data);
 	console.log('CURL Request');
 	console.log('curl -X POST https://graph.facebook.com/'+actor_id+'/feed \
--d message='+post_data.message+' \
+-d message='+message+' \
 -d access_token='+row.access_token+' \
 -d fb:explicitly_shared=true'
 );
@@ -230,7 +233,8 @@ app.post('/shakes/add', function(request, res) {
 									target_firstname : rows[0].firstname, // their firstname
 									access_token : params.access_token, // my access token
 									me : params.username, // me
-									firstname : params.firstname
+									firstname : params.firstname,
+									fbid : params.fbid
 								},function(){
 									// here we should check if we need to make a second query
 									var second_meeting_query = "SELECT * FROM meetings \
@@ -242,7 +246,7 @@ app.post('/shakes/add', function(request, res) {
 											console.log("**** go ahead and make the meeting: "+rows[0]['username'] +" met "+username.replace(/'/g,'')+" ****");
 											query("INSERT INTO meetings (user_a,user_b,created) VALUES ('"+user_id+"','"+rows[0]['user_id']+"',NOW()) ", function(m_rows){
 												var meeting_id2 = m_rows.insertId;
-												var access_token_query = 'SELECT a.access_token, u.username, u.firstname FROM access_tokens a \
+												var access_token_query = 'SELECT a.access_token, u.username, u.firstname, u.fbid FROM access_tokens a \
 																			LEFT JOIN users u ON u.id = a.user_id \
 																			WHERE a.user_id = '+rows[0].user_id+' \
 																			ORDER BY a.id DESC ';
@@ -256,7 +260,8 @@ app.post('/shakes/add', function(request, res) {
 															target_firstname : params.firstname, // their first name
 															access_token : rows[0].access_token, // my access token
 															me : rows[0].username, // me
-															firstname : rows[0].firstname
+															firstname : rows[0].firstname,
+															fbid : rows[0].fbid
 														},function(){
 															sendResponse();
 														});
