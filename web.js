@@ -86,10 +86,7 @@ var createHandshake = function(user_id,params,callback,error_callback){
 								WHERE 1=1 \
 									AND timestamp >= DATE_SUB(FROM_UNIXTIME('+params.timestamp+'),INTERVAL '+params.timestamp_threshold+' SECOND) \
 									AND timestamp <= DATE_ADD(FROM_UNIXTIME('+params.timestamp+'),INTERVAL '+params.timestamp_threshold+' SECOND) \
-									/* AND lat >= '+parseFloat(params.lat)+'-'+params.location_threshold+' \
-									AND lat <= '+parseFloat(params.lat)+'+'+params.location_threshold+' \
-									AND lng >= '+parseFloat(params.lng)+'-'+params.location_threshold+' \
-									AND lng <= '+parseFloat(params.lng)+'+'+params.location_threshold+' */ \
+									
 									AND user_id != '+user_id+' \
 							';
 		query(grab_partner,callback,error_callback);
