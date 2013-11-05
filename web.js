@@ -77,6 +77,9 @@ var createHandshake = function(user_id,params,callback,error_callback){
 		params.timestamp_threshold /= 2;
 		params.location_threshold /= 2;
 
+		var lat = parseFloat(params.lat);
+		var lng = parseFloat(params.lng);
+
 		var grab_partner = '	SELECT shakes.*, u.fbid, u.username, \
 								ABS(UNIX_TIMESTAMP(timestamp)-'+params.timestamp+') as timestamp_difference, \
 								ABS(lat-'+params.lat+') as lat_distance, \
@@ -88,6 +91,22 @@ var createHandshake = function(user_id,params,callback,error_callback){
 									AND timestamp <= DATE_ADD(FROM_UNIXTIME('+params.timestamp+'),INTERVAL '+params.timestamp_threshold+' SECOND) \
 									AND user_id != '+user_id+' \
 							';
+							/*
+		var grab_partner = '	SELECT shakes.*, u.fbid, u.username, \
+								ABS(UNIX_TIMESTAMP(timestamp)-'+params.timestamp+') as timestamp_difference, \
+								ABS(lat-'+params.lat+') as lat_distance, \
+								ABS(lng-'+params.lng+') as lng_distance \
+								FROM shakes \
+								LEFT JOIN users u ON u.id = shakes.user_id \
+								WHERE 1=1 \
+									AND timestamp >= DATE_SUB(FROM_UNIXTIME('+params.timestamp+'),INTERVAL '+params.timestamp_threshold+' SECOND) \
+									AND timestamp <= DATE_ADD(FROM_UNIXTIME('+params.timestamp+'),INTERVAL '+params.timestamp_threshold+' SECOND) \
+									AND lat >= '+lat - params.location_threshold+' \
+									AND lat <= '+lat + params.location_threshold+' \
+									AND lng >= '+lng - params.location_threshold+' \
+									AND lng <= '+lng + params.location_threshold+' \
+									AND user_id != '+user_id+' \
+							';*/
 		query(grab_partner,callback,error_callback);
 	},error_callback);
 };
@@ -104,18 +123,20 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 -d access_token=ACCESS_TOKEN
 */
 
+	var actor_id = 15439;
 	row.target_username = row.target_username.replace(/'/g,'');
 	row.access_token = row.access_token.replace(/'/g,'');
 
 	var post_data = querystring.stringify({
-	      'profile' : 'http://facebook.com/'+row.target_username,
+		  'message' : 'Actor met <a href="http://facebook.com/'+target_username+'">Chris</a>',
+	      
 	      'access_token': row.access_token,
-              'explicitly_shared' : 'true'
+          'explicitly_shared' : 'true'
 	  });
 	var options = {
 	  host: 'graph.facebook.com',
 	  port: 443,
-	  path: '/me/shakepebble:meet',
+	  path: actor_id+'/feed',
 	  method: 'POST',
 	  headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -125,8 +146,8 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 	var body = '';
 
 	console.log('CURL Request');
-	console.log('curl -X POST https://graph.facebook.com/me/shakepebble:meet \
--d profile=http%3A%2F%2Ffacebook.com/'+row.target_username+' \
+	console.log('curl -X POST https://graph.facebook.com/'+actor_id+'/feed \
+-d message='+post_data.message+' \
 -d access_token='+row.access_token+' \
 -d fb:explicitly_shared=true'
 );
