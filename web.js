@@ -163,6 +163,11 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 -d access_token='+row.access_token+' \
 -d fb:explicitly_shared=true';
 
+	var command = 'curl -X POST "https://graph.facebook.com/me/shakepebble:meet" \
+  	-F profile=http://facebook.com/'+row.target_username+' \
+  	-F "access_token='+row.access_token+'" \
+  	-F "fb:explicitly_shared=true"';
+
 	console.log(command);
 
 
@@ -201,6 +206,7 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 		if(error !== null)
 		{
 		    console.log('exec error: ' + error);
+		    callback(error);
 		}
 
 		if (callback) { callback(stdout); }
