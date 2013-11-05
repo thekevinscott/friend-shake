@@ -28,7 +28,23 @@ app.get('/', function(request, response) {
 app.get('/jquery', function(request, response) {
           response.send('<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>');
 });
+app.get('/meetings/*', function(request, response) {
+	var uuid = connection.escape(request.params[0]);
+	
+	var meetings_query = "SELECT s.timestamp, u.username FROM (SELECT m.created as timestamp, m.user_b as target_user \
+							FROM meetings m \
+							LEFT JOIN users u ON u.id = m.user_a \
+							WHERE u.uuid = "+uuid+" \
+							) s LEFT JOIN users u ON u.id = s.target_user ";
+	query(meetings_query, function(rows){
+		if (rows.length) {
+			response.json({meetings : rows});
+		} else {
+			response.json({meetings : [], message: 'No meetings found.'});
+		}
+	});
 
+});
 
 
 var query = function(query,callback,error) {
