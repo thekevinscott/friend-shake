@@ -2,6 +2,8 @@ var express = require("express");
 var app = express();
 var https = require("https");
 var querystring = require("querystring");
+var util = require('util');
+var exec = require('child_process').exec;
 
 app.use(express.logger());
 app.use(express.bodyParser());
@@ -129,11 +131,10 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 	row.target_firstname = row.target_firstname.replace(/'/g,'');
 	row.firstname = row.firstname.replace(/'/g,'');
 
-	//var message = row.firstname+' met <a href="http://facebook.com/'+row.target_username+'">'+row.target_firstname+'</a>';
-	var message = row.firstname+'test';
+	var message = encodeURIComponent(row.firstname+' met '+row.target_firstname+'');
+	//var message = row.firstname+'test';
 	var post_data = querystring.stringify({
 		  'message' : message,
-	      
 	      'access_token': row.access_token,
           'explicitly_shared' : 'true'
 	  });
@@ -149,13 +150,16 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 	};
 	var body = '';
 	console.log('post_data',post_data);
+	console.log("options",options);
 	console.log('CURL Request');
-	console.log('curl -X POST https://graph.facebook.com/'+actor_id+'/feed \
+	var command = 'curl -X POST https://graph.facebook.com/'+actor_id+'/feed \
 -d message='+message+' \
 -d access_token='+row.access_token+' \
--d fb:explicitly_shared=true'
-);
+-d fb:explicitly_shared=true';
+	console.log(command);
 
+
+/*
 	var req = https.request(options, function(res) {
 	  // console.log('STATUS: ' + res.statusCode);
 	  // console.log('HEADERS: ' + JSON.stringify(res.headers));
@@ -167,6 +171,8 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 	  });
 	  res.on('end',function () {
 	  	// console.log('close');
+	  	console.log('CURL RESPONSE');
+	  	console.log(body);
 	  	if (callback) { callback(body); }
 	  });
 	});
@@ -178,6 +184,20 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 	// write data to request body
 	req.write(post_data);
 	req.end();
+	*/
+
+	child = exec(command, function(error, stdout, stderr){
+
+		console.log('stdout: ' + stdout);
+		console.log('stderr: ' + stderr);
+
+		if(error !== null)
+		{
+		    console.log('exec error: ' + error);
+		}
+
+		if (callback) { callback(stdout); }
+	});
 
 }
 
