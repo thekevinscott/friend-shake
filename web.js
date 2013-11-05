@@ -158,11 +158,12 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 -d access_token='+row.access_token+' \
 -d fb:explicitly_shared=true';
 */
+/*
 	var command = 'curl -X POST https://graph.facebook.com/me/shakepebble:meet \
 -d profile=http%3A%2F%2Ffacebook.com/'+row.target_username+' \
 -d access_token='+row.access_token+' \
 -d fb:explicitly_shared=true';
-
+*/
 	var command = 'curl -X POST "https://graph.facebook.com/me/shakepebble:meet" \
   	-F profile=http://facebook.com/'+row.target_username+' \
   	-F "access_token='+row.access_token+'" \
