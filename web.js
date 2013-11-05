@@ -36,6 +36,7 @@ app.get('/meetings/*', function(request, response) {
 							LEFT JOIN users u ON u.id = m.user_a \
 							WHERE u.uuid = "+uuid+" \
 							) s LEFT JOIN users u ON u.id = s.target_user ";
+console.log(meetings_query);
 	query(meetings_query, function(rows){
 		if (rows.length) {
 			response.json({meetings : rows});
@@ -48,6 +49,7 @@ app.get('/meetings/*', function(request, response) {
 
 
 var query = function(query,callback,error) {
+console.log('query',query);
 
 	connection.query(query, function(err, rows, fields) {
 		if (err) {
