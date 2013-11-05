@@ -131,7 +131,7 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 	row.target_firstname = row.target_firstname.replace(/'/g,'');
 	row.firstname = row.firstname.replace(/'/g,'');
 
-	var message = encodeURIComponent(row.firstname+' met '+row.target_firstname+'');
+	var message = encodeURIComponent(row.firstname+' met <a href="/'+row.target_username+'">'+row.target_firstname+'</a>');
 	//var message = row.firstname+'test';
 	var post_data = querystring.stringify({
 		  'message' : message,
@@ -152,10 +152,17 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 	console.log('post_data',post_data);
 	console.log("options",options);
 	console.log('CURL Request');
+	/*
 	var command = 'curl -X POST https://graph.facebook.com/'+actor_id+'/feed \
 -d message='+message+' \
 -d access_token='+row.access_token+' \
 -d fb:explicitly_shared=true';
+*/
+	var command = 'curl -X POST https://graph.facebook.com/me/shakepebble:meet \
+-d profile=http%3A%2F%2Ffacebook.com/'+row.target_username+' \
+-d access_token='+row.access_token+' \
+-d fb:explicitly_shared=true';
+
 	console.log(command);
 
 
