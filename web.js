@@ -82,25 +82,25 @@ var createHandshake = function(user_id,params,callback,error_callback){
 
 
 	pool.query(create_handshake,handshake_params).then(function(rows){
-
+		console.log('created handshake');
 		params.timestamp_threshold /= 2;
 		params.location_threshold /= 2;
 
-		var partner_params = [	params.timestamp, params.lat, params.lng,
+		var partner_params = [	params.timestamp, params.lat, params.lng, user_id,
 								params.timestamp, params.timestamp_threshold, params.timestamp, params.timestamp_threshold,
 								user_id];
 
-		var grab_partner = '	SELECT shakes.*, u.fbid, u.username, u.firstname, a.access_token, \
+		var grab_partner = '	SELECT s.*, u.fbid, u.username, u.firstname, a.access_token, \
 								ABS(UNIX_TIMESTAMP(timestamp)-?) as timestamp_difference, \
 								ABS(lat-?) as lat_distance, \
 								ABS(lng-?) as lng_distance \
-								FROM shakes \
-								LEFT JOIN users u ON u.id = shakes.user_id \
-								LEFT JOIN access_tokens a ON a.user_id = u.user_id \
+								FROM shakes s \
+								LEFT JOIN users u ON u.id = s.user_id \
+								LEFT JOIN (SELECT * FROM access_tokens WHERE user_id = ? ORDER BY id DESC) a ON a.user_id = u.id \
 								WHERE 1=1 \
 									AND timestamp >= DATE_SUB(FROM_UNIXTIME(?),INTERVAL ? SECOND) \
 									AND timestamp <= DATE_ADD(FROM_UNIXTIME(?),INTERVAL ? SECOND) \
-									AND user_id != ? ';
+									AND s.user_id != ? ';
 /*
 		var grab_partner = '	SELECT shakes.*, u.fbid, u.username, u.firstname, \
 								ABS(UNIX_TIMESTAMP(timestamp)-'+params.timestamp+') as timestamp_difference, \
@@ -117,7 +117,10 @@ var createHandshake = function(user_id,params,callback,error_callback){
 									AND lng <= '+(lng + params.location_threshold)+' \
 									AND user_id != '+user_id+' ';
 									*/
-		pool.query(grab_partner,partners_params).then(callback).fin(error_callback);
+
+		pool.query(grab_partner,partner_params).then(function(rows){
+			callback(rows);
+		}).fin(error_callback);
 	}).fin(error_callback);
 
 
@@ -244,7 +247,7 @@ app.post('/shakes/add', function(request, res) {
 		params[require] = request.body[require];
 	}
 
-	console.log("params",params);
+	console.log("params at the top",params);
 
 	params.location_threshold = parseFloat(request.body.location_threshold || 0.0005);
 	params.timestamp_threshold = parseFloat(request.body.timestamp_threshold || 10);
@@ -255,11 +258,13 @@ app.post('/shakes/add', function(request, res) {
 			id: rows.insertId,
 			username: params.username,
 			firstname: params.firstname,
-			fbid: params.fbid
+			fbid: params.fbid,
+			access_token : params.access_token
 		};
+		console.log('user',user);
 
 		createAccessToken(user.id,params.access_token,function(rows){
-			user.access_token = params.access_token;
+			console.log('access token good',rows);
 			createHandshake(user.id,params,function(rows){
 
 
@@ -280,6 +285,8 @@ app.post('/shakes/add', function(request, res) {
 						lat: row.lat,
 						lng: row.lng
 					};
+					console.log('friend',friend);
+					console.log('handshake',handshake);
 
 					handleMeetingRequest({
 						user: user,
@@ -503,7 +510,8 @@ pool = function() {
 	var query = function(query,params) {
 		var deferred = q.defer();
 		getConnection().then(function(conn){
-			conn.query(query, function(err, rows, fields) {
+			console.log('here comes a query',query);
+			conn.query(query, params, function(err, rows, fields) {
 				if (err) {
 					deferred.reject(err);
 					console.log('Query Error',query); console.log('err',err);
