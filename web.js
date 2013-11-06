@@ -32,7 +32,7 @@ app.get('/jquery', function(request, response) {
 });
 app.get('/meetings/*', function(request, response) {
 	var uuid = connection.escape(request.params[0]);
-	
+
 	var meetings_query = "SELECT s.timestamp, u.username, u.fbid, u.uuid, u.firstname FROM (SELECT m.created as timestamp, m.user_b as target_user \
 							FROM meetings m \
 							LEFT JOIN users u ON u.id = m.user_a \
@@ -78,10 +78,10 @@ var createHandshake = function(user_id,params,callback,error_callback){
 
 		params.timestamp_threshold /= 2;
 		params.location_threshold /= 2;
-		
+
 		var lat = parseFloat(params.lat.replace(/'/g,''));
 		var lng = parseFloat(params.lng.replace(/'/g,''));
-		
+
 
 		var grab_partner = '	SELECT shakes.*, u.fbid, u.username, u.firstname, \
 								ABS(UNIX_TIMESTAMP(timestamp)-'+params.timestamp+') as timestamp_difference, \
@@ -108,7 +108,7 @@ var createHandshake = function(user_id,params,callback,error_callback){
 									AND lng >= '+(lng - params.location_threshold)+' \
 									AND lng <= '+(lng + params.location_threshold)+' \
 									AND user_id != '+user_id+' ';
-									*/									
+									*/
 		query(grab_partner,callback,error_callback);
 	},error_callback);
 };
@@ -319,7 +319,7 @@ app.post('/shakes/add', function(request, res) {
 
 												});
 											});
-											
+
 										} else {
 											sendResponse();
 										}
@@ -344,7 +344,7 @@ app.post('/shakes/add', function(request, res) {
 				res.json({err : err});
 			});
 		},function(err){
-			res.json({err : err});	
+			res.json({err : err});
 		});
 	},function(err){
 		res.json({err : err});
@@ -414,10 +414,11 @@ function handleDisconnect() {
   });                                     // process asynchronous requests in the meantime.
                                           // If you're also serving http, display a 503 error.
   connection.on('error', function(err) {
-    console.log('db error', err);
+
     if(err.code === 'PROTOCOL_CONNECTION_LOST') { // Connection to the MySQL server is usually
       handleDisconnect();                         // lost due to either server restart, or a
     } else {                                      // connnection idle timeout (the wait_timeout
+      console.log('db error', err);
       throw err;                                  // server variable configures this)
     }
   });
