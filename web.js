@@ -4,9 +4,12 @@ var https = require("https");
 var querystring = require("querystring");
 var util = require('util');
 var exec = require('child_process').exec;
+var q = require('q');
+
 
 app.use(express.logger());
 app.use(express.bodyParser());
+
 
 
 var mysql      = require('mysql');
@@ -16,6 +19,9 @@ var db_config = {
 	  password : '9a9cd260',
 	  database : 'heroku_b378eaa431255a3'
 	};
+
+
+var pool = {};
 
 var connection = mysql.createConnection(db_config);
 
@@ -402,29 +408,46 @@ app.listen(port, function() {
 
 
 
-function handleDisconnect() {
-  connection = mysql.createConnection(db_config); // Recreate the connection, since
-                                                  // the old one cannot be reused.
 
-  connection.connect(function(err) {              // The server is either down
-    if(err) {                                     // or restarting (takes a while sometimes).
-      console.log('error when connecting to db:', err);
-      setTimeout(handleDisconnect, 2000); // We introduce a delay before attempting to reconnect,
-    }                                     // to avoid a hot loop, and to allow our node script to
-  });                                     // process asynchronous requests in the meantime.
-                                          // If you're also serving http, display a 503 error.
-  connection.on('error', function(err) {
+pool = function() {
 
-    if(err.code === 'PROTOCOL_CONNECTION_LOST') { // Connection to the MySQL server is usually
-      handleDisconnect();                         // lost due to either server restart, or a
-    } else {                                      // connnection idle timeout (the wait_timeout
-      console.log('db error', err);
-      throw err;                                  // server variable configures this)
-    }
-  });
-}
+	function handleDisconnect() {
+	  connection = mysql.createConnection(db_config); // Recreate the connection, since
+	                                                  // the old one cannot be reused.
 
-handleDisconnect();
+	  connection.connect(function(err) {              // The server is either down
+	    if(err) {                                     // or restarting (takes a while sometimes).
+	      console.log('error when connecting to db:', err);
+	      setTimeout(handleDisconnect, 2000); // We introduce a delay before attempting to reconnect,
+	    }                                     // to avoid a hot loop, and to allow our node script to
+	  });                                     // process asynchronous requests in the meantime.
+	                                          // If you're also serving http, display a 503 error.
+	  connection.on('error', function(err) {
+
+	    if(err.code === 'PROTOCOL_CONNECTION_LOST') { // Connection to the MySQL server is usually
+	      handleDisconnect();                         // lost due to either server restart, or a
+	    } else {                                      // connnection idle timeout (the wait_timeout
+	      console.log('db error', err);
+	      throw err;                                  // server variable configures this)
+	    }
+	  });
+	}
+	var getConnection = function() {
+		return connection;
+	}
+
+
+	handleDisconnect();
+
+	return {
+		getConnection : getConnection
+	};
+}();
+
+
+
+
+
 
 
 
