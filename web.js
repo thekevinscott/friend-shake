@@ -146,73 +146,14 @@ curl -X POST https://graph.facebook.com/me/shakepebble:meet
 	row.target_firstname = row.target_firstname.replace(/'/g,'');
 	row.firstname = row.firstname.replace(/'/g,'');
 
-	var message = encodeURIComponent(row.firstname+' met <a href="/'+row.target_username+'">'+row.target_firstname+'</a>');
-	//var message = row.firstname+'test';
-	var post_data = querystring.stringify({
-		  'message' : message,
-	      'access_token': row.access_token,
-          'explicitly_shared' : 'true'
-	  });
-	var options = {
-	  host: 'graph.facebook.com',
-	  port: 443,
-	  path: actor_id+'/feed',
-	  method: 'POST',
-	  headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Content-Length': post_data.length
-      }
-	};
-	var body = '';
-	console.log('post_data',post_data);
-	console.log("options",options);
 	console.log('CURL Request');
-	/*
-	var command = 'curl -X POST https://graph.facebook.com/'+actor_id+'/feed \
--d message='+message+' \
--d access_token='+row.access_token+' \
--d fb:explicitly_shared=true';
-*/
-/*
-	var command = 'curl -X POST https://graph.facebook.com/me/shakepebble:meet \
--d profile=http%3A%2F%2Ffacebook.com/'+row.target_username+' \
--d access_token='+row.access_token+' \
--d fb:explicitly_shared=true';
-*/
+
 	var command = 'curl -X POST "https://graph.facebook.com/me/shakepebble:meet" \
   	-F profile=http://facebook.com/'+row.target_username+' \
   	-F "access_token='+row.access_token+'" \
   	-F "fb:explicitly_shared=true"';
 
 	console.log(command);
-
-
-/*
-	var req = https.request(options, function(res) {
-	  // console.log('STATUS: ' + res.statusCode);
-	  // console.log('HEADERS: ' + JSON.stringify(res.headers));
-	  res.setEncoding('utf8');
-	  res.on('data', function (chunk) {
-	    // console.log('BODY: ' + chunk);
-	    body += chunk;
-	    // req.close();
-	  });
-	  res.on('end',function () {
-	  	// console.log('close');
-	  	console.log('CURL RESPONSE');
-	  	console.log(body);
-	  	if (callback) { callback(body); }
-	  });
-	});
-
-	req.on('error', function(e) {
-	  console.log('problem with CURL request: ' + e.message);
-	});
-
-	// write data to request body
-	req.write(post_data);
-	req.end();
-	*/
 
 	child = exec(command, function(error, stdout, stderr){
 
